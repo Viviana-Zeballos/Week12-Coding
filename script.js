@@ -19,20 +19,20 @@ class Room {
 class HouseService {
     static URL = 'https://ancient-taiga-31359.herokuapp.com/api/houses';
 
-    static getAllHouse(){
-        return $.get(this.url);
+    static getAllHouses(){
+        return $.get(this.URL);
 
     }
     static getHouse(id) {
-        return $.get(this.url + `/${id}`);
+        return $.get(this.URL + `/${id}`);
     }
 
     static createHouse(house) {
-        return $.post(this.url, house);
+        return $.post(this.URL, house);
     }
     static updateHouse(house) {
         return $.ajax({
-            url: this.url + `/${house._id}`,
+            url: this.URL + `/${house._id}`,
             dataType: 'json',
             data: JSON.stringify(house),
             contentType: 'application/json',
@@ -42,7 +42,7 @@ class HouseService {
 
     static deleteHouse(id) {
         return $.ajax({
-            url: this.url + `/${id}`,
+            url: this.URL + `/${id}`,
             type: 'DELETE'
         });
     }
@@ -55,6 +55,53 @@ class DOMManager {
     static getAllHouses() {
         HouseService.getAllHouses().then(houses => this.render(houses));
     }
+
+    static createHouse(name) {
+        HouseService.createHouse(new House(name))
+        .then(() => {
+            return HouseService.getAllHouses();
+        })
+        .then((houses) => this.render(houses));
+    }
+
+    static deleteHouse(id){
+        HouseService.deleteHouse(id)
+        .then(() => {
+            return HouseService.getAllHouses();
+        })
+        .then((houses) => this.render(houses));
+    }
+
+    static addRoom(id) {
+        for (let house of this.houses) {
+            if (house._id == id) {
+                house.rooms.push(new Room($(`#${house._id}-room-name`).val(), ($(`#${house._id}-room-area`).val())))
+                HouseService.updateHouse(house)
+                .then(() => {
+                    return HouseService.getAllHouses();
+                })
+                .then((houses)=> this.render(houses));
+            }
+        }
+    }
+
+    static deleteRoom(houseId, roomId){
+        for (let house of this.houses) {
+            if (house._id == houseId) {
+                for (let room of house.rooms) {
+                    if (room._id == roomId) {
+                        house.rooms.splice(house.rooms.indexOf(room), 1);
+                        HouseService.updateHouse(house)
+                        .then(() => {
+                            return HouseService.getAllHouses();
+                        });
+                        .then((houses)=> this.render(houses));
+                    }
+                }
+            }
+        }
+    }
+
 
     static render(houses) {
         this.houses = houses;
@@ -73,7 +120,7 @@ class DOMManager {
                                 <input type="text" id="${house._id}-room-name" class="form-control" placeholder="Room Name">
                             </div>
                             <div class="col-sm">
-                                <input type="text" id="${house._id}-room-area" class="form-control" placeholder="Room Name"></input>
+                                <input type="text" id="${house._id}-room-area" class="form-control" placeholder="Room Area"></input>
                         </div>
                     </div>
                     <button id="${house._id}-new-room" onclick="DOMManager.addRoom('${house._id}')" class="btn btn-primary form-control">Add</button>
@@ -91,5 +138,11 @@ class DOMManager {
             }
         }
     }
+}
+
+$('#create-new-house').click(() => {
+    DOMManager.createHouse($('#new-house-name').val());
+    $('#new-house-name').val('');
+});
 
 DOMManager.getAllHouses();
