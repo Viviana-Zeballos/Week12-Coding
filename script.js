@@ -1,46 +1,31 @@
-class House {
-    constructor(name){
+// this class represents an alumni object
+
+class Alumni {
+    constructor(name, jobType, phoneNumber){
         this.name = name;
-        this.rooms = [];
+        this.jobType = jobType;
+        this.phoneNumber = phoneNumber;
     }
 }
 
-class Room {
-    constructor(name, area) {
-        this.name = name;
-        this.area = area;
-    }
+// here we have a class that contains static methods that will interact with the API
 
-    addRoom(name, area) {
-        this.rooms.push(new Room (name, area));
-    }
-}
+class AlumniService {
+    static URL = 'https://668981ca0ea28ca88b882f6c.mockapi.io/Alumni_Network';
 
-class HouseService {
-    static URL = 'https://ancient-taiga-31359.herokuapp.com/api/houses';
-
-    static getAllHouses(){
+    static getAllAlumnis(){
         return $.get(this.URL);
-
     }
-    static getHouse(id) {
+
+    static getAlumni(id) {
         return $.get(this.URL + `/${id}`);
     }
 
-    static createHouse(house) {
-        return $.post(this.URL, house);
-    }
-    static updateHouse(house) {
-        return $.ajax({
-            url: this.URL + `/${house._id}`,
-            dataType: 'json',
-            data: JSON.stringify(house),
-            contentType: 'application/json',
-            type: 'PUT'
-        });
+    static createAlumni(alumni) {
+        return $.post(this.URL, alumni);
     }
 
-    static deleteHouse(id) {
+    static deleteAlumni(id) {
         return $.ajax({
             url: this.URL + `/${id}`,
             type: 'DELETE'
@@ -49,100 +34,62 @@ class HouseService {
 
 }
 
+// this will manage DOM interaction by getting data from the AlumniService and then rendering it
+
 class DOMManager {
-    static houses;
+    static alumnis;
 
-    static getAllHouses() {
-        HouseService.getAllHouses().then(houses => this.render(houses));
+    static getAllAlumnis() {
+        AlumniService.getAllAlumnis().then(alumnis => this.render(alumnis));
     }
 
-    static createHouse(name) {
-        HouseService.createHouse(new House(name))
+    static createAlumni(name, jobType, phoneNumber) {
+        AlumniService.createAlumni(new Alumni(name, jobType, phoneNumber))
         .then(() => {
-            return HouseService.getAllHouses();
+            return AlumniService.getAllAlumnis();
         })
-        .then((houses) => this.render(houses));
+        .then((alumnis) => this.render(alumnis));
     }
 
-    static deleteHouse(id){
-        HouseService.deleteHouse(id)
+    static deleteAlumni(id){
+        AlumniService.deleteAlumni(id)
         .then(() => {
-            return HouseService.getAllHouses();
+            return AlumniService.getAllAlumnis();
         })
-        .then((houses) => this.render(houses));
-    }
-
-    static addRoom(id) {
-        for (let house of this.houses) {
-            if (house._id == id) {
-                house.rooms.push(new Room($(`#${house._id}-room-name`).val(), ($(`#${house._id}-room-area`).val())))
-                HouseService.updateHouse(house)
-                .then(() => {
-                    return HouseService.getAllHouses();
-                })
-                .then((houses)=> this.render(houses));
-            }
-        }
-    }
-
-    static deleteRoom(houseId, roomId){
-        for (let house of this.houses) {
-            if (house._id == houseId) {
-                for (let room of house.rooms) {
-                    if (room._id == roomId) {
-                        house.rooms.splice(house.rooms.indexOf(room), 1);
-                        HouseService.updateHouse(house)
-                        .then(() => {
-                            return HouseService.getAllHouses();
-                        });
-                        .then((houses)=> this.render(houses));
-                    }
-                }
-            }
-        }
+        .then((alumnis) => this.render(alumnis));
     }
 
 
-    static render(houses) {
-        this.houses = houses;
+    static render(alumnis) {
+        this.alumnis = alumnis;
         $('#app').empty();
-        for (let house of houses ){
+        for (let alumni of alumnis ){
             $('#app').prepend(
-                `<div id="${house._id}" class="card">
+                `<div id="${alumni.id}" class="card">
                 <div class="card-header">
-                    <h2>${house.name}</h2>
-                    <button class="btn btn-danger" onclick="DOMManager.deleteHouse('${house._id}')">Delete</button>
-                </div>
-                <div class="card-body">
-                    <div class="card">
-                        <div class="row">
-                            <div class="col-sm">
-                                <input type="text" id="${house._id}-room-name" class="form-control" placeholder="Room Name">
-                            </div>
-                            <div class="col-sm">
-                                <input type="text" id="${house._id}-room-area" class="form-control" placeholder="Room Area"></input>
-                        </div>
-                    </div>
-                    <button id="${house._id}-new-room" onclick="DOMManager.addRoom('${house._id}')" class="btn btn-primary form-control">Add</button>
+                    <h2>${alumni.name}</h2>
+                    <p>${alumni.jobType}</p>
+                    <p>${alumni.phoneNumber}</p>
+                    <button class="btn btn-danger" onclick="DOMManager.deleteAlumni('${alumni.id}')">Delete</button>
                 </div>
             </div>
         </div> <br>`
             );
-            for (let room of house.rooms) {
-                $(`#${house._id}`).find('.card-body').append(
-                    `<p>
-                    <span id="name-${room._id}">strong>Name: </strong> ${room.name}</span>
-                    <span id="area-${room._id}">strong>Area: </strong> ${room.area}</span>
-                    <button class="btn btn-danger" onclick="DOMManager.deleteRoom('${house._id}'), '${room._id}')">Delete Room</button>`
-                )
-            }
         }
     }
 }
 
-$('#create-new-house').click(() => {
-    DOMManager.createHouse($('#new-house-name').val());
-    $('#new-house-name').val('');
+// this handles the click event of a button so that we can collect input values
+// then we clear the fields afterwards
+
+$('#create-new-alumni').click(() => {
+    const name = $('#name').val()
+    const jobType = $('#jobType').val()
+    const phoneNumber = $('#phoneNumber').val()
+    DOMManager.createAlumni(name, jobType, phoneNumber);
+    $('#name').val('');
+    $('#jobType').val('');
+    $('#phoneNumber').val('');
 });
 
-DOMManager.getAllHouses();
+DOMManager.getAllAlumnis();
